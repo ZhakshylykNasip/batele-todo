@@ -10,6 +10,23 @@ import { type AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `batele-todo_${name}`);
 
+export const todo = createTable("todo", (d) => ({
+  id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+  title: d.varchar({ length: 256 }).notNull(),
+  completed: d.boolean().default(false),
+
+  userId: d
+    .varchar({ length: 255 })
+    .notNull()
+    .references(() => users.id),
+
+  createdAt: d
+    .timestamp({ withTimezone: true })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+}));
+
 export const posts = createTable(
   "post",
   (d) => ({

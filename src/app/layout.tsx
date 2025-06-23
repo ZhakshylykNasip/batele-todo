@@ -1,9 +1,14 @@
 import "~/styles/globals.css";
+import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { theme } from "~/styles/theme";
+import { Notifications } from "@mantine/notifications";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -21,8 +26,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geist.variable}`}>
+      <head>
+        <ColorSchemeScript />
+      </head>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <MantineProvider theme={theme}>
+          <Notifications />
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+        </MantineProvider>
       </body>
     </html>
   );
