@@ -22,16 +22,16 @@ export default async function Home() {
 
           <p className="max-w-2xl text-center text-xl text-gray-300">
             {session
-              ? "Вы успешно вошли. Ниже показаны последние задачи."
+              ? "Вы вошли как пользователь. Ниже вы можете выйти из аккаунта или просмотреть последние задачи."
               : "Чтобы пользоваться Todo, пожалуйста, нажмите кнопку «Войти» ниже."}
           </p>
 
           <div className="flex flex-col items-center gap-4 sm:flex-row">
             <Link
-              href={session ? "/todos" : "/api/auth/signin"}
+              href={session ? "/api/auth/signout" : "/api/auth/signin"}
               className="rounded-full bg-white/10 px-8 py-3 text-lg font-semibold transition hover:bg-white/20"
             >
-              {session ? "Перейти к задачам" : "Войти"}
+              {session ? "Выйти из аккаунта" : "Войти"}
             </Link>
 
             {!session && (
