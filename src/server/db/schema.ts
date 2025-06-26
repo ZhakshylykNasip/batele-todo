@@ -1,5 +1,11 @@
 import { relations, sql } from "drizzle-orm";
-import { index, pgTableCreator, primaryKey } from "drizzle-orm/pg-core";
+import { integer, uuid } from "drizzle-orm/gel-core";
+import {
+  index,
+  pgTable,
+  pgTableCreator,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
 /**
@@ -68,6 +74,15 @@ export const users = createTable("user", (d) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
 }));
+
+export const todoAssignees = createTable(
+  "todo_assignees",
+  (d) => ({
+    todoId: d.integer().notNull(),
+    userId: d.varchar({ length: 255 }).notNull(), // uuid в базе, но d.varchar() на уровне типов
+  }),
+  (t) => [primaryKey({ columns: [t.todoId, t.userId] })],
+);
 
 export const accounts = createTable(
   "account",

@@ -5,4 +5,5 @@ export type TodoEntity = {
   userId: string;
   createdAt: Date;
   updatedAt: Date | null;
+  assigneeIds?: string[];
 };

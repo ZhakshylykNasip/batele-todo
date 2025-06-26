@@ -6,6 +6,7 @@ import { z } from "zod";
 const schema = z.object({
   title: z.string().min(3),
   completed: z.boolean() || null,
+  // assigneeIds: z.string() || null,
 });
 
 export type FormValues = z.infer<typeof schema>;

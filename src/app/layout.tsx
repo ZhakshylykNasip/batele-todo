@@ -9,6 +9,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { theme } from "~/styles/theme";
 import { Notifications } from "@mantine/notifications";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -30,10 +31,12 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider theme={theme}>
-          <Notifications />
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </MantineProvider>
+        <SessionProvider>
+          <MantineProvider theme={theme}>
+            <Notifications />
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </MantineProvider>
+        </SessionProvider>
       </body>
     </html>
   );

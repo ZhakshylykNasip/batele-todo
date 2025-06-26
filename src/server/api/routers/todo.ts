@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
-import { todo } from "~/server/db/schema";
+import { todo, todoAssignees } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, like } from "drizzle-orm";
 
@@ -10,6 +10,7 @@ export const todoRouter = createTRPCRouter({
       z.object({
         title: z.string(),
         completed: z.boolean(),
+        assignedIds: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -29,6 +30,15 @@ export const todoRouter = createTRPCRouter({
           message: "Cannot create todo!",
           code: "INTERNAL_SERVER_ERROR",
         });
+      }
+
+      if (input.assignedIds?.length) {
+        await ctx.db.insert(todoAssignees).values(
+          input.assignedIds.map((userId) => ({
+            todoId: newTodo.id,
+            userId,
+          })),
+        );
       }
 
       return newTodo;
@@ -57,7 +67,6 @@ export const todoRouter = createTRPCRouter({
           code: "INTERNAL_SERVER_ERROR",
         });
       }
-      console.log("updatedTodo: ", updatedTodo);
 
       return updatedTodo;
     }),
@@ -82,11 +91,14 @@ export const todoRouter = createTRPCRouter({
       }
       return data;
     }),
+
   getAll: protectedProcedure
     .input(
       z.object({
         completed: z.boolean().nullable().default(null),
         search: z.string().nullable().default(null),
+        userId: z.string().optional(),
+        assigneeId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -95,18 +107,32 @@ export const todoRouter = createTRPCRouter({
           input.completed !== null
             ? eq(todo.completed, input.completed)
             : undefined,
-
-          // input.search !== null?
           input.search !== null
             ? like(todo.title, `%${input.search}%`)
             : undefined,
-          eq(todo.userId, ctx.session.user.id),
+          input.userId ? eq(todo.userId, input.userId) : undefined,
         ),
         orderBy: desc(todo.createdAt),
       });
 
-      return todos;
+      const allAssignees = await ctx.db.query.todoAssignees.findMany();
+
+      let todosWithAssignees = todos.map((t) => ({
+        ...t,
+        assigneeIds: allAssignees
+          .filter((a) => a.todoId === t.id)
+          .map((a) => a.userId),
+      }));
+
+      if (input.assigneeId) {
+        todosWithAssignees = todosWithAssignees.filter((t) =>
+          t.assigneeIds.includes(input.assigneeId!),
+        );
+      }
+
+      return todosWithAssignees;
     }),
+
   getById: protectedProcedure
     .input(
       z.object({
@@ -114,9 +140,41 @@ export const todoRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const data = await ctx.db.query.todo.findFirst({
-        where: and(eq(todo.id, input.id), eq(todo.userId, ctx.session.user.id)),
+      const todoItem = await ctx.db.query.todo.findFirst({
+        where: eq(todo.id, input.id),
       });
-      return data;
+
+      if (!todoItem) return null;
+
+      const assignees = await ctx.db.query.todoAssignees.findMany({
+        where: eq(todoAssignees.todoId, input.id),
+      });
+
+      return {
+        ...todoItem,
+        assigneeIds: assignees.map((a) => a.userId),
+      };
+    }),
+
+  assignUsers: protectedProcedure
+    .input(
+      z.object({
+        todoId: z.number(),
+        userIds: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(todoAssignees)
+        .where(eq(todoAssignees.todoId, input.todoId));
+
+      await ctx.db.insert(todoAssignees).values(
+        input.userIds.map((userId) => ({
+          todoId: input.todoId,
+          userId,
+        })),
+      );
+
+      return { success: true };
     }),
 });
